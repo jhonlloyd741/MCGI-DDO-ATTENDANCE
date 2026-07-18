@@ -25,12 +25,17 @@ export function Members() {
   });
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLocaleFilter, setSelectedLocaleFilter] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeLocales = locales.filter(l => l.status === 'Active');
   
   const displayedMembers = members.filter(m => showArchived ? m.isDeleted : !m.isDeleted)
+    .filter(m => {
+      if (!selectedLocaleFilter) return true;
+      return m.locale === selectedLocaleFilter;
+    })
     .filter(m => m.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || m.locale.toLowerCase().includes(searchQuery.toLowerCase()));
   const member = members.find(m => m.id === selectedMember);
 
@@ -237,6 +242,16 @@ export function Members() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="px-3 py-1.5 rounded-lg text-xs border border-border-main bg-bg-main focus:outline-none focus:ring-2 focus:ring-[#0A3D91]/20"
             />
+            <select
+              value={selectedLocaleFilter}
+              onChange={(e) => setSelectedLocaleFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-xs border border-border-main bg-bg-main focus:outline-none focus:ring-2 focus:ring-[#0A3D91]/20 font-semibold text-text-main"
+            >
+              <option value="">All Locales</option>
+              {locales.map(l => (
+                <option key={l.id} value={l.name}>{l.name}</option>
+              ))}
+            </select>
             <button onClick={() => setShowGuide(!showGuide)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center space-x-1 transition-colors duration-200 ${showGuide ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40' : 'bg-bg-main text-text-muted border-border-main hover:bg-bg-card'}`}>
               <HelpCircle size={14} />
               <span>CSV Format Guide</span>
