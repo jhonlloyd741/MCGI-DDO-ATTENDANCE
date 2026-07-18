@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore, Member } from '../store/store';
 import QRCode from 'react-qr-code';
-import { Plus, Download, Upload, Trash2, Edit, RefreshCw, Archive, FileSpreadsheet } from 'lucide-react';
+import { Plus, Download, Upload, Trash2, Edit, RefreshCw, Archive, FileSpreadsheet, HelpCircle, Info, AlertTriangle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
 
@@ -11,6 +11,18 @@ export function Members() {
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    id: string | null;
+    name: string;
+    isPermanent: boolean;
+  }>({
+    isOpen: false,
+    id: null,
+    name: '',
+    isPermanent: false,
+  });
   
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -66,11 +78,12 @@ export function Members() {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm("Are you sure you want to delete this member? They will be moved to the recycle bin.")) {
-      deleteMember(id);
-      addAuditLog({ user: 'Super Admin', action: `Soft deleted member: ${name}` });
-      setSelectedMember(null);
-    }
+    setDeleteModal({
+      isOpen: true,
+      id,
+      name,
+      isPermanent: false,
+    });
   };
 
   const handleRestore = (id: string, name: string) => {
@@ -79,11 +92,25 @@ export function Members() {
   };
 
   const handleHardDelete = (id: string, name: string) => {
-    if (confirm("WARNING: This will permanently delete the member. This cannot be undone. Proceed?")) {
-      hardDeleteMember(id);
-      addAuditLog({ user: 'Super Admin', action: `Permanently deleted member: ${name}` });
-      setSelectedMember(null);
+    setDeleteModal({
+      isOpen: true,
+      id,
+      name,
+      isPermanent: true,
+    });
+  };
+
+  const executeDelete = () => {
+    if (!deleteModal.id) return;
+    if (deleteModal.isPermanent) {
+      hardDeleteMember(deleteModal.id);
+      addAuditLog({ user: 'Super Admin', action: `Permanently deleted member: ${deleteModal.name}` });
+    } else {
+      deleteMember(deleteModal.id);
+      addAuditLog({ user: 'Super Admin', action: `Soft deleted member: ${deleteModal.name}` });
     }
+    setSelectedMember(null);
+    setDeleteModal({ isOpen: false, id: null, name: '', isPermanent: false });
   };
 
   const handleExport = () => {
@@ -92,6 +119,40 @@ export function Members() {
     XLSX.utils.book_append_sheet(wb, ws, "Members");
     XLSX.writeFile(wb, `MCGI_Members_${new Date().toISOString().slice(0, 10)}.xlsx`);
     addAuditLog({ user: 'Super Admin', action: 'Exported Member List' });
+  };
+
+  const handleDownloadCSVTemplate = () => {
+    const headers = [
+      'Full Name',
+      'Baptism Date',
+      'Gender',
+      'Contact Number',
+      'Locale',
+      'Address',
+      'Medical Condition',
+      'Maintenance Medicine',
+      'Status'
+    ];
+    const sampleRows = [
+      ['Juan Dela Cruz', '2015-10-20', 'Male', '09123456789', activeLocales[0]?.name || 'Nabunturan', 'Davao de Oro', 'false', 'false', 'Active'],
+      ['Maria Santos', '2018-12-12', 'Female', '09876543210', activeLocales[1]?.name || 'Compostela', 'Davao de Oro', 'true', 'false', 'Active']
+    ];
+    
+    const csvContent = [
+      headers.join(','),
+      ...sampleRows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'mcgi_members_bulk_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addAuditLog({ user: 'Super Admin', action: 'Downloaded predefined CSV template' });
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,26 +169,40 @@ export function Members() {
         const data = XLSX.utils.sheet_to_json(ws) as any[];
 
         const imported = data.reduce((acc, row) => {
-          const rowName = row.fullName || 'Unknown';
-          const rowBirthdate = row.birthdate || '';
-          
-          const isDuplicate = members.some(m => m.fullName.toLowerCase() === rowName.toLowerCase() && m.birthdate === rowBirthdate) || 
-                              acc.some(m => m.fullName.toLowerCase() === rowName.toLowerCase() && m.birthdate === rowBirthdate);
+          const normalizedRow: any = {};
+          Object.keys(row).forEach(k => {
+            const normalizedKey = k.toLowerCase().replace(/[\s_-]/g, '');
+            normalizedRow[normalizedKey] = row[k];
+          });
+
+          const rowName = normalizedRow.fullname || normalizedRow.name || 'Unknown';
+          const rowBaptismDate = normalizedRow.baptismdate || normalizedRow.baptism || '';
+          const rowBirthdate = normalizedRow.birthdate || '';
+          const rowGender = normalizedRow.gender || 'Male';
+          const rowContact = normalizedRow.contactnumber || normalizedRow.contact || normalizedRow.phone || '';
+          const rowLocale = normalizedRow.locale || (activeLocales[0]?.name || '');
+          const rowAddress = normalizedRow.address || '';
+          const rowMedical = normalizedRow.medicalcondition || normalizedRow.medical || false;
+          const rowMaintenance = normalizedRow.maintenancemedicine || normalizedRow.maintenance || false;
+          const rowStatus = normalizedRow.status || 'Active';
+
+          const isDuplicate = members.some(m => m.fullName.toLowerCase() === rowName.toLowerCase() && m.baptismDate === rowBaptismDate) || 
+                              acc.some(m => m.fullName.toLowerCase() === rowName.toLowerCase() && m.baptismDate === rowBaptismDate);
           
           if (!isDuplicate) {
             acc.push({
               id: row.id || uuidv4(),
               fullName: rowName,
               birthdate: rowBirthdate,
-              gender: row.gender || 'Male',
-              baptismDate: row.baptismDate || '',
-              contactNumber: row.contactNumber || '',
-              locale: row.locale || (activeLocales[0]?.name || ''),
-              address: row.address || '',
-              medicalCondition: !!row.medicalCondition,
-              maintenanceMedicine: !!row.maintenanceMedicine,
-              status: row.status || 'Active',
-              registrationDate: row.registrationDate || new Date().toISOString(),
+              gender: rowGender,
+              baptismDate: rowBaptismDate,
+              contactNumber: rowContact,
+              locale: rowLocale,
+              address: rowAddress,
+              medicalCondition: rowMedical === true || String(rowMedical).toLowerCase() === 'true',
+              maintenanceMedicine: rowMaintenance === true || String(rowMaintenance).toLowerCase() === 'true',
+              status: rowStatus,
+              registrationDate: normalizedRow.registrationdate || new Date().toISOString(),
               isDeleted: false
             });
           }
@@ -162,6 +237,10 @@ export function Members() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="px-3 py-1.5 rounded-lg text-xs border border-border-main bg-bg-main focus:outline-none focus:ring-2 focus:ring-[#0A3D91]/20"
             />
+            <button onClick={() => setShowGuide(!showGuide)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center space-x-1 transition-colors duration-200 ${showGuide ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40' : 'bg-bg-main text-text-muted border-border-main hover:bg-bg-card'}`}>
+              <HelpCircle size={14} />
+              <span>CSV Format Guide</span>
+            </button>
             <button onClick={() => setShowArchived(!showArchived)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${showArchived ? 'bg-red-50 text-red-600 border-red-200' : 'bg-bg-main text-text-muted border-border-main'}`}>
               <Archive size={14} className="inline mr-1" />
               {showArchived ? 'Show Active' : 'Recycle Bin'}
@@ -182,6 +261,66 @@ export function Members() {
           </div>
         </div>
 
+        {showGuide && (
+          <div className="mb-4 p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl space-y-3 text-xs text-text-main animate-fadeIn">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+              <div className="flex items-center space-x-2 text-amber-800 dark:text-amber-400 font-bold">
+                <Info size={16} />
+                <span>Predefined CSV Bulk Upload Format</span>
+              </div>
+              <button onClick={handleDownloadCSVTemplate} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] flex items-center space-x-1.5 transition-colors shadow-sm">
+                <Download size={13} />
+                <span>Download Predefined CSV Template</span>
+              </button>
+            </div>
+            
+            <p className="text-text-muted leading-relaxed">
+              To import members in bulk, upload a CSV or Excel file containing the exact columns below. The headers are case-insensitive and allow spaces/underscores. Duplicates are automatically skipped.
+            </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white dark:bg-bg-card p-3 rounded-lg border border-border-main font-mono text-[10px]">
+              <div>
+                <span className="font-bold text-amber-700 dark:text-amber-400">Full Name</span>
+                <span className="text-red-500 font-bold ml-0.5">*</span>
+                <span className="block text-text-muted">e.g. Juan Dela Cruz</span>
+              </div>
+              <div>
+                <span className="font-bold text-amber-700 dark:text-amber-400">Baptism Date</span>
+                <span className="text-red-500 font-bold ml-0.5">*</span>
+                <span className="block text-text-muted">YYYY-MM-DD</span>
+              </div>
+              <div>
+                <span className="font-bold text-[#0A3D91] dark:text-blue-400">Gender</span>
+                <span className="block text-text-muted">Male or Female</span>
+              </div>
+              <div>
+                <span className="font-bold text-[#0A3D91] dark:text-blue-400">Contact Number</span>
+                <span className="block text-text-muted">e.g. 09123456789</span>
+              </div>
+              <div>
+                <span className="font-bold text-[#0A3D91] dark:text-blue-400">Locale</span>
+                <span className="block text-text-muted">Match active locale name</span>
+              </div>
+              <div>
+                <span className="font-bold text-[#0A3D91] dark:text-blue-400">Address</span>
+                <span className="block text-text-muted">Full home address</span>
+              </div>
+              <div>
+                <span className="font-bold text-[#0A3D91] dark:text-blue-400">Medical Condition</span>
+                <span className="block text-text-muted">true / false</span>
+              </div>
+              <div>
+                <span className="font-bold text-[#0A3D91] dark:text-blue-400">Maintenance Medicine</span>
+                <span className="block text-text-muted">true / false</span>
+              </div>
+            </div>
+            
+            <div className="text-[10px] text-amber-700/80 dark:text-amber-400/80 italic">
+              * Required fields. Locales must match the active configured locales under Settings, otherwise they will default to the primary locale.
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-text-muted uppercase bg-bg-main sticky top-0">
@@ -198,7 +337,14 @@ export function Members() {
                   <td className="px-4 py-4 font-bold">{m.fullName}</td>
                   <td className="px-4 py-4">{m.locale}</td>
                   <td className="px-4 py-4">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] rounded-full font-bold uppercase">{m.status}</span>
+                    <span className={`px-2 py-1 text-[10px] rounded-full font-bold uppercase ${
+                      m.status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      m.status === 'Inactive' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                      m.status === 'Transferred' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      {m.status}
+                    </span>
                   </td>
                   <td className="px-4 py-4">
                     <button onClick={() => { setSelectedMember(m.id); setIsAdding(false); setIsEditing(false); }} className="text-[#0A3D91] hover:underline font-bold text-xs uppercase">View</button>
@@ -332,6 +478,60 @@ export function Members() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Beautiful Deletion Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border-main p-6 space-y-6 transform scale-100 transition-all">
+            <div className="flex items-center space-x-4">
+              <div className={`p-3 rounded-full ${deleteModal.isPermanent ? 'bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'}`}>
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-text-main">
+                  {deleteModal.isPermanent ? 'Permanently Delete Member' : 'Move Member to Recycle Bin'}
+                </h3>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Confirm action for <span className="font-bold text-text-main">{deleteModal.name}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-bg-main rounded-xl border border-border-main text-xs text-text-muted space-y-2 leading-relaxed">
+              {deleteModal.isPermanent ? (
+                <>
+                  <p className="font-semibold text-red-600 dark:text-red-400">⚠️ CRITICAL WARNING:</p>
+                  <p>This action is <span className="font-bold uppercase text-red-600 dark:text-red-400">irreversible</span>. It will permanently remove all registration records, attendance history, QR-code associations, and health files from the database.</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-amber-600 dark:text-amber-400">NOTICE:</p>
+                  <p>The member will be removed from the active directory and sent to the <span className="font-bold">Recycle Bin</span>. You can restore them anytime from there or permanently delete them later.</p>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setDeleteModal({ isOpen: false, id: null, name: '', isPermanent: false })}
+                className="px-4 py-2.5 rounded-xl border border-border-main text-xs font-bold text-text-muted hover:bg-bg-main hover:text-text-main transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-md ${
+                  deleteModal.isPermanent 
+                    ? 'bg-red-600 hover:bg-red-700 active:scale-[0.98]' 
+                    : 'bg-[#0A3D91] hover:bg-[#072d6b] active:scale-[0.98]'
+                }`}
+              >
+                {deleteModal.isPermanent ? 'Yes, Permanently Delete' : 'Yes, Delete Member'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

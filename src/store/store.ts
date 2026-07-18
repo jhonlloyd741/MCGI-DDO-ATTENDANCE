@@ -83,6 +83,7 @@ interface AppState {
   deleteLocale: (id: string) => void;
   addGatheringType: (type: GatheringType) => void;
   updateGatheringType: (id: string, type: Partial<GatheringType>) => void;
+  deleteGatheringType: (id: string) => void;
   addAuditLog: (log: Omit<AuditLog, 'id' | 'timestamp'>) => void;
   clearData: () => void;
 }
@@ -133,6 +134,9 @@ export const useStore = create<AppState>((set) => ({
   addGatheringType: (type) => set((state) => ({ gatheringTypes: [...state.gatheringTypes, type] })),
   updateGatheringType: (id, typeUpdate) => set((state) => ({
     gatheringTypes: state.gatheringTypes.map(t => t.id === id ? { ...t, ...typeUpdate } : t)
+  })),
+  deleteGatheringType: (id) => set((state) => ({
+    gatheringTypes: state.gatheringTypes.filter(g => g.id !== id)
   })),
   addAuditLog: (log) => set((state) => ({
     auditLogs: [{ ...log, id: Math.random().toString(36).substring(2, 9), timestamp: new Date().toISOString() }, ...state.auditLogs]

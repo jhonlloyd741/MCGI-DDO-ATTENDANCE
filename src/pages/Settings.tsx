@@ -20,6 +20,8 @@ export function Settings() {
   const [newLocaleProvince, setNewLocaleProvince] = useState('Davao de Oro');
   
   const [newGatheringName, setNewGatheringName] = useState('');
+  const [editingGatheringId, setEditingGatheringId] = useState<string | null>(null);
+  const [editingGatheringName, setEditingGatheringName] = useState('');
 
   const [localeSearch, setLocaleSearch] = useState('');
 
@@ -215,28 +217,88 @@ export function Settings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {gatheringTypes.map(gathering => (
-                    <tr key={gathering.id} className="border-t border-border-main hover:bg-bg-main">
-                      <td className="px-4 py-3 font-bold">{gathering.name}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 text-[10px] rounded-full font-bold uppercase ${gathering.status === 'Open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>
-                          {gathering.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => {
-                            const newStatus = gathering.status === 'Open' ? 'Closed' : 'Open';
-                            updateGatheringType(gathering.id, { status: newStatus });
-                            useStore.getState().addAuditLog({ user: 'Super Admin', action: `Changed gathering type ${gathering.name} status to ${newStatus}` });
-                          }}
-                          className="text-xs font-bold text-[#0A3D91] hover:underline"
-                        >
-                          Toggle Status
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {gatheringTypes.map(gathering => {
+                    const isEditing = editingGatheringId === gathering.id;
+                    return (
+                      <tr key={gathering.id} className="border-t border-border-main hover:bg-bg-main">
+                        <td className="px-4 py-3 font-bold">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editingGatheringName}
+                              onChange={(e) => setEditingGatheringName(e.target.value)}
+                              className="border border-border-main px-2 py-1 rounded-lg text-sm bg-bg-card text-text-main focus:outline-none focus:ring-2 focus:ring-[#0A3D91]/20 w-full max-w-xs"
+                              autoFocus
+                            />
+                          ) : (
+                            gathering.name
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 text-[10px] rounded-full font-bold uppercase ${gathering.status === 'Open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>
+                            {gathering.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right space-x-2">
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  if (editingGatheringName.trim()) {
+                                    updateGatheringType(gathering.id, { name: editingGatheringName.trim() });
+                                    useStore.getState().addAuditLog({ user: 'Super Admin', action: `Renamed gathering type to ${editingGatheringName.trim()}` });
+                                    setEditingGatheringId(null);
+                                  }
+                                }}
+                                className="text-xs font-bold text-green-600 hover:underline"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingGatheringId(null)}
+                                className="text-xs font-bold text-text-muted hover:underline"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingGatheringId(gathering.id);
+                                  setEditingGatheringName(gathering.name);
+                                }}
+                                className="text-xs font-bold text-[#0A3D91] hover:underline"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newStatus = gathering.status === 'Open' ? 'Closed' : 'Open';
+                                  updateGatheringType(gathering.id, { status: newStatus });
+                                  useStore.getState().addAuditLog({ user: 'Super Admin', action: `Changed gathering type ${gathering.name} status to ${newStatus}` });
+                                }}
+                                className="text-xs font-bold text-slate-600 hover:underline"
+                              >
+                                Toggle Status
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete the gathering type "${gathering.name}"?`)) {
+                                    useStore.getState().deleteGatheringType(gathering.id);
+                                    useStore.getState().addAuditLog({ user: 'Super Admin', action: `Deleted gathering type ${gathering.name}` });
+                                  }
+                                }}
+                                className="text-xs font-bold text-red-600 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
