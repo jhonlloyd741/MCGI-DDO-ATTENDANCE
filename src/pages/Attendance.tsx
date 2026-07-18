@@ -49,7 +49,7 @@ export function Attendance() {
   };
 
   return (
-    <div className="bg-bg-card rounded-2xl shadow-sm border border-border-main p-6 h-[calc(100vh-140px)] flex flex-col">
+    <div className="bg-bg-card rounded-2xl shadow-sm border border-border-main p-4 md:p-6 h-auto lg:h-[calc(100vh-140px)] flex flex-col">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 className="text-xl font-bold">Attendance Records</h2>
@@ -83,8 +83,8 @@ export function Attendance() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <table className="w-full text-sm text-left">
+      <div className="flex-1 overflow-x-auto overflow-y-auto">
+        <table className="w-full text-sm text-left min-w-[640px]">
           <thead className="text-xs text-text-muted uppercase bg-bg-main sticky top-0 shadow-sm">
             <tr>
               <th className="px-4 py-3 rounded-tl-lg">Date</th>

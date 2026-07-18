@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../theme/ThemeContext';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Settings, LogOut, ScanLine, User, Lock, Eye, EyeOff, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, LogOut, ScanLine, User, Lock, Eye, EyeOff, Wifi, WifiOff, RefreshCw, Menu, X } from 'lucide-react';
 import { useStore } from '../store/store';
 
 export function AdminLayout() {
@@ -12,6 +12,8 @@ export function AdminLayout() {
   const syncStatus = useStore(state => state.syncStatus);
   const pendingSyncCount = useStore(state => state.pendingSyncCount);
   const syncData = useStore(state => state.syncData);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('mcgi_admin_authenticated') === 'true';
@@ -136,7 +138,8 @@ export function AdminLayout() {
 
   return (
     <div className="flex h-screen w-full bg-bg-main text-text-main overflow-hidden font-sans transition-colors duration-200">
-      <aside className="w-64 bg-[#0A3D91] dark:bg-[#062456] text-white flex flex-col shadow-xl z-10 shrink-0">
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <aside className="hidden md:flex w-64 bg-[#0A3D91] dark:bg-[#062456] text-white flex flex-col shadow-xl z-10 shrink-0">
         <div className="p-6 border-b border-[#072d6b]">
           <div className="flex items-center space-x-3 mb-2">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0">
@@ -181,10 +184,83 @@ export function AdminLayout() {
         </div>
       </aside>
 
+      {/* Mobile Drawer Sidebar */}
+      {isSidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300" 
+            onClick={() => setIsSidebarOpen(false)}
+          />
+          
+          <aside className="relative w-64 bg-[#0A3D91] dark:bg-[#062456] text-white flex flex-col h-full shadow-2xl animate-slide-in">
+            <div className="p-6 border-b border-[#072d6b] flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shrink-0">
+                  <span className="text-[#0A3D91] font-black text-xs">MCGI</span>
+                </div>
+                <div>
+                  <h1 className="font-bold tracking-tight leading-tight text-sm text-[#FFD700]">DAVAO DE ORO</h1>
+                  <p className="text-[9px] uppercase tracking-widest text-slate-300">Admin Panel</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto py-6 flex flex-col space-y-2 px-4">
+              {menu.map((item) => {
+                const active = location.pathname === item.path;
+                return (
+                  <Link 
+                    key={item.name} 
+                    to={item.path}
+                    onClick={() => setIsSidebarOpen(false)}
+                    className={`flex items-center space-x-3 py-3 transition-all duration-200 rounded-xl ${
+                      active 
+                        ? 'bg-white/10 text-[#FFD700] font-bold shadow-md border-l-4 border-[#FFD700] pl-3 pr-4' 
+                        : 'text-slate-300 hover:bg-white/5 hover:text-white pl-4 pr-4'
+                    }`}
+                  >
+                    {item.icon}
+                    <span className="text-sm">{item.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+
+            <div className="p-4 border-t border-[#072d6b]">
+              <Link 
+                to="/" 
+                onClick={() => { handleLogout(); setIsSidebarOpen(false); }}
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all w-full"
+              >
+                <LogOut size={18} />
+                <span className="text-sm">Log Out</span>
+              </Link>
+            </div>
+          </aside>
+        </div>
+      )}
+
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header className="h-16 bg-bg-card border-b border-border-main flex items-center justify-between px-6 shrink-0 transition-colors duration-200">
-          <div className="flex items-center space-x-3">
-            <h2 className="font-bold text-lg">
+        <header className="h-16 bg-bg-card border-b border-border-main flex items-center justify-between px-4 md:px-6 shrink-0 transition-colors duration-200">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            {/* Hamburger Button for mobile */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 rounded-xl hover:bg-bg-main text-text-main transition-all active:scale-[0.95]"
+              aria-label="Open sidebar menu"
+            >
+              <Menu size={20} />
+            </button>
+
+            <h2 className="font-bold text-base md:text-lg hidden sm:block">
               {menu.find(m => m.path === location.pathname)?.name || 'Admin'}
             </h2>
             

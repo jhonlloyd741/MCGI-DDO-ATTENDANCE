@@ -230,10 +230,12 @@ export function Members() {
   };
 
   return (
-    <div className="flex h-full gap-6">
-      <div className="flex-1 bg-bg-card rounded-2xl shadow-sm border border-border-main p-6 flex flex-col h-[calc(100vh-140px)]">
+    <div className="flex flex-col lg:flex-row h-full gap-6">
+      <div className="flex-1 bg-bg-card rounded-2xl shadow-sm border border-border-main p-4 md:p-6 flex flex-col h-auto lg:h-[calc(100vh-140px)] overflow-hidden">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">{showArchived ? 'Recycle Bin' : 'Member Directory'}</h2>
+          <h2 id="member-directory-title" className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-[#0A3D91] via-blue-700 to-[#0A3D91] dark:from-[#FFD700] dark:to-yellow-500 bg-clip-text text-transparent flex items-center gap-2">
+            {showArchived ? 'Recycle Bin' : 'Member Directory'}
+          </h2>
           <div className="flex space-x-2">
             <input 
               type="text" 
@@ -336,8 +338,8 @@ export function Members() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
-          <table className="w-full text-sm text-left">
+        <div className="flex-1 overflow-x-auto overflow-y-auto">
+          <table className="w-full text-sm text-left min-w-[500px]">
             <thead className="text-xs text-text-muted uppercase bg-bg-main sticky top-0">
               <tr>
                 <th className="px-4 py-3 rounded-tl-lg">Name</th>
@@ -361,8 +363,44 @@ export function Members() {
                       {m.status}
                     </span>
                   </td>
-                  <td className="px-4 py-4">
-                    <button onClick={() => { setSelectedMember(m.id); setIsAdding(false); setIsEditing(false); }} className="text-[#0A3D91] hover:underline font-bold text-xs uppercase">View</button>
+                  <td className="px-4 py-4 space-x-3 whitespace-nowrap">
+                    <button 
+                      onClick={() => { setSelectedMember(m.id); setIsAdding(false); setIsEditing(false); }} 
+                      className="text-[#0A3D91] dark:text-blue-400 hover:underline font-bold text-xs uppercase"
+                    >
+                      View
+                    </button>
+                    {!m.isDeleted ? (
+                      <>
+                        <button 
+                          onClick={() => { setSelectedMember(m.id); setIsAdding(false); handleEdit(m); }} 
+                          className="text-amber-600 dark:text-amber-400 hover:underline font-bold text-xs uppercase"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(m.id, m.fullName)} 
+                          className="text-red-600 dark:text-red-400 hover:underline font-bold text-xs uppercase"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={() => handleRestore(m.id, m.fullName)} 
+                          className="text-green-600 dark:text-green-400 hover:underline font-bold text-xs uppercase"
+                        >
+                          Restore
+                        </button>
+                        <button 
+                          onClick={() => handleHardDelete(m.id, m.fullName)} 
+                          className="text-red-600 dark:text-red-400 hover:underline font-bold text-xs uppercase"
+                        >
+                          Purge
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -375,7 +413,7 @@ export function Members() {
       </div>
 
       {(member && !isAdding && !isEditing) && (
-        <div className="w-96 bg-bg-card rounded-2xl shadow-sm border border-border-main p-6 flex flex-col h-[calc(100vh-140px)] overflow-y-auto shrink-0">
+        <div className="w-full lg:w-96 bg-bg-card rounded-2xl shadow-sm border border-border-main p-6 flex flex-col h-auto lg:h-[calc(100vh-140px)] overflow-y-auto shrink-0">
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-xl font-bold">Profile</h2>
             <button onClick={() => setSelectedMember(null)} className="text-text-muted hover:text-text-main">✕</button>
@@ -444,7 +482,7 @@ export function Members() {
       )}
 
       {(isAdding || isEditing) && (
-        <div className="w-96 bg-bg-card rounded-2xl shadow-sm border border-border-main p-6 flex flex-col h-[calc(100vh-140px)] overflow-y-auto shrink-0">
+        <div className="w-full lg:w-96 bg-bg-card rounded-2xl shadow-sm border border-border-main p-6 flex flex-col h-auto lg:h-[calc(100vh-140px)] overflow-y-auto shrink-0">
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-xl font-bold">{isEditing ? 'Edit Member' : 'New Member'}</h2>
             <button onClick={() => { setIsAdding(false); setIsEditing(false); }} className="text-text-muted hover:text-text-main">✕</button>

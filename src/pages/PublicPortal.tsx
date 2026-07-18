@@ -60,11 +60,6 @@ export function PublicPortal() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.healthDeclaration) {
-      alert("Please check the health declaration.");
-      return;
-    }
-
     let member = members.find(m => m.fullName.toLowerCase() === formData.fullName.toLowerCase() && m.baptismDate === formData.baptismDate);
     
     if (!member) {
@@ -117,21 +112,21 @@ export function PublicPortal() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-bg-main text-text-main overflow-hidden font-sans transition-colors duration-200">
-      <header className="bg-[#0A3D91] dark:bg-[#062456] text-white p-4 flex justify-between items-center border-b-4 border-[#FFD700] shadow-lg shrink-0 transition-colors duration-200">
+    <div className="flex flex-col min-h-screen md:h-screen w-full bg-bg-main text-text-main md:overflow-hidden font-sans transition-colors duration-200">
+      <header className="bg-[#0A3D91] dark:bg-[#062456] text-white p-4 flex flex-col md:flex-row justify-between items-center border-b-4 border-[#FFD700] shadow-lg shrink-0 gap-4 md:gap-0 transition-colors duration-200">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
             <span className="text-[#0A3D91] font-black">MCGI</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">DAVAO DE ORO ATTENDANCE</h1>
-            <p className="text-[10px] uppercase tracking-widest text-slate-300">Enterprise Management System v2.0</p>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight">DAVAO DE ORO ATTENDANCE</h1>
+            <p className="text-[10px] uppercase tracking-widest text-slate-300">Enterprise Management System v2.1</p>
           </div>
         </div>
-        <div className="flex items-center space-x-6">
-          <div className="text-right">
-            <p className="text-xs text-slate-300">Current Date/Time</p>
-            <p className="text-sm font-mono text-[#FFD700]">{format(currentTime, 'MMM dd, yyyy | HH:mm:ss')}</p>
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full md:w-auto justify-end">
+          <div className="text-center sm:text-right">
+            <p className="text-[10px] text-slate-300">Current Date/Time</p>
+            <p className="text-xs sm:text-sm font-mono text-[#FFD700]">{format(currentTime, 'MMM dd, yyyy | HH:mm:ss')}</p>
           </div>
           <div className="flex space-x-2 items-center">
             {!isOnline ? (
@@ -172,8 +167,8 @@ export function PublicPortal() {
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        <div className="w-[60%] p-6 overflow-hidden flex flex-col">
+      <main className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
+        <div className="w-full md:w-[60%] p-4 md:p-6 md:overflow-y-auto flex flex-col">
           <form onSubmit={handleSubmit} className="bg-bg-card rounded-2xl shadow-xl border border-border-main flex flex-col h-full transition-colors duration-200">
             <div className="p-5 border-b border-border-main flex justify-between items-center bg-black/5 dark:bg-white/5">
               <div>
@@ -186,7 +181,7 @@ export function PublicPortal() {
             </div>
 
             <div className="p-6 space-y-5 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Full Name *</label>
                   <input required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} type="text" placeholder="Juan Dela Cruz" className="w-full border border-border-main p-2.5 rounded-lg text-sm bg-bg-main focus:outline-none focus:ring-2 focus:ring-[#0A3D91]/20 transition-colors duration-200" />
@@ -220,7 +215,7 @@ export function PublicPortal() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 border-t border-border-main pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border-main pt-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Gathering Type</label>
                   <select value={formData.gatheringType} onChange={e => setFormData({...formData, gatheringType: e.target.value})} className="w-full border border-border-main p-2.5 rounded-lg text-sm bg-bg-main font-bold text-[#0A3D91] dark:text-blue-400 transition-colors duration-200">
@@ -245,16 +240,6 @@ export function PublicPortal() {
                 </div>
               </div>
 
-              <div className="p-4 bg-bg-main border border-dashed border-border-main rounded-xl transition-colors duration-200">
-                <div className="flex items-start space-x-3">
-                  <input required checked={formData.healthDeclaration} onChange={e => setFormData({...formData, healthDeclaration: e.target.checked})} type="checkbox" className="mt-1 w-4 h-4 rounded text-[#0A3D91]" />
-                  <div>
-                    <p className="text-xs font-semibold uppercase">Health Declaration</p>
-                    <p className="text-[10px] text-text-muted">I confirm that I do not have any respiratory symptoms or medical conditions that require special assistance today.</p>
-                  </div>
-                </div>
-              </div>
-
               <button type="submit" className="w-full bg-[#0A3D91] hover:bg-[#072d6b] text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center space-x-2 transition-all active:scale-[0.98]">
                 <span>SUBMIT ATTENDANCE</span>
                 <svg className="w-5 h-5 text-[#FFD700]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
@@ -263,7 +248,7 @@ export function PublicPortal() {
           </form>
         </div>
 
-        <div className="w-[40%] p-6 pl-0 flex flex-col space-y-6">
+        <div className="w-full md:w-[40%] p-4 md:p-6 md:pl-0 flex flex-col space-y-4 md:space-y-6 md:overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-bg-card p-4 rounded-2xl shadow border border-border-main flex items-center justify-between transition-colors duration-200">
               <div>
