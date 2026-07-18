@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mcgi-primary: #0A3D91;
+  --color-mcgi-primary-dark: #072d6b;
+  --color-mcgi-accent: #FFD700;
+  
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-border-main: var(--border-main);
+}
+
+@layer base {
+  :root {
+    --bg-main: var(--color-slate-50);
+    --bg-card: var(--color-white);
+    --text-main: var(--color-slate-900);
+    --text-muted: var(--color-slate-500);
+    --border-main: var(--color-slate-200);
+  }
+
+  .dark {
+    --bg-main: var(--color-slate-950);
+    --bg-card: var(--color-slate-900);
+    --text-main: var(--color-slate-50);
+    --text-muted: var(--color-slate-400);
+    --border-main: var(--color-slate-800);
+  }
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background-color: var(--color-bg-main);
+  color: var(--color-text-main);
+}
