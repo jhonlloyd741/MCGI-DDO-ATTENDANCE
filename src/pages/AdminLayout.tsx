@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { useTheme } from '../theme/ThemeContext';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Settings, LogOut, ScanLine, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, LogOut, ScanLine, User, Lock, Eye, EyeOff, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { useStore } from '../store/store';
 
 export function AdminLayout() {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
+
+  const isOnline = useStore(state => state.isOnline);
+  const syncStatus = useStore(state => state.syncStatus);
+  const pendingSyncCount = useStore(state => state.pendingSyncCount);
+  const syncData = useStore(state => state.syncData);
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('mcgi_admin_authenticated') === 'true';
@@ -150,7 +156,11 @@ export function AdminLayout() {
               <Link 
                 key={item.name} 
                 to={item.path}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${active ? 'bg-white/10 text-[#FFD700] font-bold shadow-sm' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`}
+                className={`flex items-center space-x-3 py-3 transition-all duration-200 rounded-xl ${
+                  active 
+                    ? 'bg-white/10 text-[#FFD700] font-bold shadow-md border-l-4 border-[#FFD700] pl-3 pr-4' 
+                    : 'text-slate-300 hover:bg-white/5 hover:text-white pl-4 pr-4'
+                }`}
               >
                 {item.icon}
                 <span className="text-sm">{item.name}</span>
@@ -173,13 +183,46 @@ export function AdminLayout() {
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="h-16 bg-bg-card border-b border-border-main flex items-center justify-between px-6 shrink-0 transition-colors duration-200">
-          <h2 className="font-bold text-lg">
-            {menu.find(m => m.path === location.pathname)?.name || 'Admin'}
-          </h2>
+          <div className="flex items-center space-x-3">
+            <h2 className="font-bold text-lg">
+              {menu.find(m => m.path === location.pathname)?.name || 'Admin'}
+            </h2>
+            
+            {/* Sync Badge */}
+            {!isOnline ? (
+              <span className="flex items-center space-x-1.5 bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 px-2.5 py-1 rounded-full text-[10px] font-bold border border-amber-200 dark:border-amber-900/30 shadow-sm" title="Your work is saved locally and will auto-sync when WiFi or Mobile Data is back.">
+                <WifiOff size={12} className="text-amber-500" />
+                <span>OFFLINE (LOCAL SECURE)</span>
+              </span>
+            ) : syncStatus === 'syncing' ? (
+              <span className="flex items-center space-x-1.5 bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400 px-2.5 py-1 rounded-full text-[10px] font-bold border border-blue-200 dark:border-blue-900/30 animate-pulse">
+                <RefreshCw size={12} className="animate-spin text-blue-500" />
+                <span>SYNCING TO CLOUD... ({pendingSyncCount} PENDING)</span>
+              </span>
+            ) : (
+              <div className="flex items-center space-x-2">
+                {pendingSyncCount > 0 && (
+                  <button 
+                    onClick={() => syncData()}
+                    className="flex items-center space-x-1.5 px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-[10px] font-black uppercase tracking-wider animate-bounce shadow-sm"
+                    title="Click to manually push pending changes to cloud server"
+                  >
+                    <RefreshCw size={10} className="animate-spin" />
+                    <span>Sync {pendingSyncCount} Records</span>
+                  </button>
+                )}
+                <span className="flex items-center space-x-1.5 bg-green-50 text-green-800 dark:bg-green-950/40 dark:text-green-400 px-2.5 py-1 rounded-full text-[10px] font-bold border border-green-200 dark:border-green-900/30 shadow-sm">
+                  <Wifi size={12} className="text-green-500" />
+                  <span>CLOUD SYNCED</span>
+                </span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-full hover:bg-bg-main transition-colors"
+              title="Toggle Theme"
             >
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>

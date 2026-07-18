@@ -15,6 +15,11 @@ export function PublicPortal() {
   const allAttendanceRecords = useStore(state => state.attendanceRecords);
   const recentAttendance = allAttendanceRecords.slice(0, 5);
   
+  const isOnline = useStore(state => state.isOnline);
+  const syncStatus = useStore(state => state.syncStatus);
+  const pendingSyncCount = useStore(state => state.pendingSyncCount);
+  const syncData = useStore(state => state.syncData);
+  
   const [currentTime, setCurrentTime] = useState(new Date());
   
   useEffect(() => {
@@ -129,10 +134,33 @@ export function PublicPortal() {
             <p className="text-sm font-mono text-[#FFD700]">{format(currentTime, 'MMM dd, yyyy | HH:mm:ss')}</p>
           </div>
           <div className="flex space-x-2 items-center">
-            <span className="flex items-center space-x-1 bg-green-500/20 text-green-400 px-2 py-1 rounded text-[10px] border border-green-500/30">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span>SYSTEM ONLINE</span>
-            </span>
+            {!isOnline ? (
+              <span className="flex items-center space-x-1.5 bg-amber-500/20 text-amber-400 px-2.5 py-1 rounded-lg text-[10px] border border-amber-500/30 shadow-sm" title="Your inputs will be stored on your device and uploaded automatically once you are connected to Wifi or Mobile Data.">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                <span className="font-bold">OFFLINE MODE (SAFE)</span>
+              </span>
+            ) : syncStatus === 'syncing' ? (
+              <span className="flex items-center space-x-1.5 bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg text-[10px] border border-blue-500/30 animate-pulse">
+                <span className="w-2 h-2 bg-blue-400 rounded-full animate-spin"></span>
+                <span className="font-bold">SYNCING ({pendingSyncCount} PENDING)</span>
+              </span>
+            ) : (
+              <div className="flex items-center space-x-2">
+                {pendingSyncCount > 0 && (
+                  <button 
+                    onClick={() => syncData()}
+                    className="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white rounded text-[9px] font-black uppercase tracking-wider animate-bounce"
+                    title="Click to manually push pending local changes to the cloud"
+                  >
+                    Sync {pendingSyncCount} Records
+                  </button>
+                )}
+                <span className="flex items-center space-x-1.5 bg-green-500/20 text-green-400 px-2.5 py-1 rounded-lg text-[10px] border border-green-500/30 shadow-sm">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  <span className="font-bold">CLOUD CONNECTED & SYNCED</span>
+                </span>
+              </div>
+            )}
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="ml-2 p-2 rounded-full hover:bg-white/10 transition-colors"
